@@ -1,0 +1,55 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**
+!**/src/test/**
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+
+### VS Code ###
+.vscode/
+
+# 本地依赖、凭据和运行数据
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+logs/
+uploads/
+application-local.yml
+.DS_Store
+Thumbs.db
+
+# 本地依赖、凭据和运行数据
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+logs/
+uploads/
+application-local.yml
+.DS_Store
+Thumbs.db
