@@ -1,172 +1,69 @@
-
 package com.example.shizhan.rubbish.controller.android;
-
-
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.example.shizhan.rubbish.common.R;
+import com.example.shizhan.rubbish.common.*;
 import com.example.shizhan.rubbish.entity.orders;
-import com.example.shizhan.rubbish.service.Interface.orderService;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import com.example.shizhan.rubbish.mapper.OrderMapper;
+import com.example.shizhan.rubbish.service.WasteOrderWorkflowService;
+import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigInteger;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
-/**
- * @author bz_c
- * @version 1.0
- */
-// http://localhost:8080/android/user/order/order.html
-@Slf4j
 @RestController
 @RequestMapping("/orderAndroid")
 public class OrderControllerAnd {
-
-    @Autowired
-    private orderService os;
-
+    private final OrderMapper ordersMapper;
+    private final WasteOrderWorkflowService workflow;
+    public OrderControllerAnd(OrderMapper ordersMapper, WasteOrderWorkflowService workflow) {
+        this.ordersMapper = ordersMapper; this.workflow = workflow;
+    }
     @GetMapping("/map1")
-    public R<List<orders>> getAll1(HttpServletRequest request) {
-        LambdaQueryWrapper<orders> queryWrapper = new LambdaQueryWrapper();
-        queryWrapper.ne(orders::getStatus, 4);  // 不等于4的数据
-        queryWrapper.ne(orders::getStatus, 3);
-        // 对于用户来说只需要拿到自己所在的下单的数据
-        // 设置对应的条件即可
-        String account = (String) request.getSession().getAttribute("userName");
-        queryWrapper.eq(orders::getAccount, account);
-
-        // 拿到所有的数据
-        List<orders> orders = os.list(queryWrapper);  // 拿到所有的数据
-
-        for (com.example.shizhan.rubbish.entity.orders order : orders) {
-            if(order.getStatus() == 1) {
-                order.setStatus_Str("待运输");
-            }else if(order.getStatus() == 2) {
-                order.setStatus_Str("运输中");
-            }else if(order.getStatus() == 3) {
-                order.setStatus_Str("已完成");
-            }else if(order.getStatus() == 4) {
-                order.setStatus_Str("已取消");
-            }
-        }
-
-       /* ArrayList<HashMap<Object, String>> arrayList = new ArrayList<>();
-
-        HashMap<Object, String> map = new HashMap<>();
-        map.put("userName", "河南工业大学站");
-        map.put("status", "正在运输");
-
-        HashMap<Object, String> map1 = new HashMap<>();
-        map1.put("userName", "郑州大学站");
-        map1.put("status", "已经完成");
-
-        arrayList.add(map);
-        arrayList.add(map1);*/
-
-        return R.success(orders);
+    public R<List<orders>> userOrders(HttpServletRequest request) {
+        List<orders> list = ordersMapper.selectUserOrders(SessionIdentity.requireUser(request).toString());
+        list.forEach(this::describeStatus);
+        return R.success(list);
     }
-
     @GetMapping("/map2")
-    public R<List<orders>> getAll2(HttpServletRequest request) {
-        LambdaQueryWrapper<orders> queryWrapper = new LambdaQueryWrapper();
-        queryWrapper.eq(orders::getStatus, 1);  // 不等于4的数据
-
-        // 对数据进行查找的时候需要判断每个司机只能拿到自己的订单
-        String userName = (String) request.getSession().getAttribute("username");
-        // 即等于1和属于自己的订单的
-        queryWrapper.or(
-                wrapper -> wrapper.eq(orders::getStatus, 2)
-                        .eq(orders::getAccount1, userName));
-
-        // 拿到所有的数据
-        List<orders> orders = os.list(queryWrapper);  // 拿到所有的数据
-
-        for (com.example.shizhan.rubbish.entity.orders order : orders) {
-            if(order.getStatus() == 1) {
-                order.setStatus_Str("待运输");
-            }else if(order.getStatus() == 2) {
-                order.setStatus_Str("运输中");
-            }else if(order.getStatus() == 3) {
-                order.setStatus_Str("已完成");
-            }else if(order.getStatus() == 4) {
-                order.setStatus_Str("已取消");
-            }
-        }
-
-       /* ArrayList<HashMap<Object, String>> arrayList = new ArrayList<>();
-
-        HashMap<Object, String> map = new HashMap<>();
-        map.put("userName", "河南工业大学站");
-        map.put("status", "正在运输");
-
-        HashMap<Object, String> map1 = new HashMap<>();
-        map1.put("userName", "郑州大学站");
-        map1.put("status", "已经完成");
-
-        arrayList.add(map);
-        arrayList.add(map1);*/
-
-        return R.success(orders);
+    public R<List<orders>> driverOrders(HttpServletRequest request, @RequestParam(defaultValue = "all") String scope) {
+        Long id = SessionIdentity.requireDriver(request);
+        LambdaQueryWrapper<orders> query = new LambdaQueryWrapper<>();
+        if ("pending".equals(scope)) query.eq(orders::getStatus, 1);
+        else if ("mine".equals(scope)) query.eq(orders::getDriverId, id);
+        else if ("all".equals(scope)) query.and(q -> q.eq(orders::getStatus, 1).or().eq(orders::getDriverId, id));
+        else throw new BusinessException("订单范围无效");
+        List<orders> list = ordersMapper.selectList(query.orderByDesc(orders::getOrderTime).orderByDesc(orders::getId));
+        list.forEach(this::describeStatus);
+        return R.success(list);
     }
-
     @GetMapping("/getById")
-    public R<orders> getById(int id) {
-        orders os = this.os.getById(id);
-
-        if(os.getStatus() == 1) {
-            os.setStatus_Str("待运输");
-            // 对日期进行赋空值
-            os.setOverTime(null);
-        }else if(os.getStatus() == 2) {
-            os.setStatus_Str("运输中");
-            os.setOverTime(null);
-        }else if(os.getStatus() == 3) {
-            os.setStatus_Str("已完成");
-        }else if(os.getStatus() == 4) {
-            os.setStatus_Str("已取消");
-        }
-
-        return R.success(os);
+    public R<orders> detail(@RequestParam BigInteger id, HttpServletRequest request) {
+        orders order = ordersMapper.selectById(id);
+        if (order == null) throw new BusinessException("订单不存在");
+        boolean allowed = SessionIdentity.isAdmin(request);
+        Long driver = SessionIdentity.driverId(request);
+        if (driver != null) allowed |= order.getStatus() == 1 || Objects.equals(order.getDriverId(), driver);
+        Long user = SessionIdentity.userId(request);
+        if (!allowed && user != null) allowed = ordersMapper.countUserOrder(id, user.toString()) > 0;
+        if (!allowed) throw new BusinessException("无权查看该订单");
+        describeStatus(order);
+        return R.success(order);
     }
-
-    @GetMapping("/cancelOrder")
-    public R<Boolean> cancelOrder(int id) {
-        orders o = new orders();
-        o.setId(BigInteger.valueOf(id));
-        o.setStatus(4);
-        os.updateById(o);   // 更新该状态
-
-        return R.success(true);
+    @PostMapping("/{id}/accept")
+    public R<orders> accept(@PathVariable BigInteger id, HttpServletRequest request) {
+        return R.success(workflow.accept(id, SessionIdentity.requireDriver(request)));
     }
-
-    @GetMapping("changeState")
-    public R<Boolean> changeState(HttpServletRequest request, int id) {
-        // 先拿到数据库中的id
-        R<orders> ordersR = getById(id);
-        int status = ordersR.getData().getStatus();
-        // 让状态自增
-        orders o = new orders();
-        o.setId(BigInteger.valueOf(id));
-        o.setStatus(status + 1);
-        // 如果当前订单从待运输转换为正在运输的话则其它司机则看不到该订单
-        // 需要对当前订单进行特定的账号的设置的处理
-        String userName = (String) request.getSession().getAttribute("userName");
-        o.setAccount1(userName);
-        // 如果当前订单已经完成的话则需要设置订单完成的时间
-        if(status + 1 == 3) {
-            Date d = new Date();
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            String dateNowStr = sdf.format(d);
-            o.setOverTime(dateNowStr);
-        }
-        // 进行数据的更新
-        os.updateById(o);
-        return R.success(true);
+    @PostMapping("/{id}/complete")
+    public R<orders> complete(@PathVariable BigInteger id, HttpServletRequest request) {
+        return R.success(workflow.complete(id, SessionIdentity.requireDriver(request), false));
+    }
+    @PostMapping("/{id}/cancel")
+    public R<orders> cancel(@PathVariable BigInteger id, HttpServletRequest request) {
+        return R.success(workflow.cancel(id, SessionIdentity.requireUser(request), false));
+    }
+    private void describeStatus(orders order) {
+        String[] labels = {"未知", "待接单", "运输中", "已完成", "已取消"};
+        int status = order.getStatus();
+        order.setStatus_Str(status >= 1 && status <= 4 ? labels[status] : "未知");
     }
 }

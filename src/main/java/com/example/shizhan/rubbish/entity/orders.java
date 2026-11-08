@@ -54,4 +54,12 @@ public class orders implements Serializable {
     private String account;
 
     private String account1;
+    private Long binId;
+    private Long stationId;
+    private Long driverId;
+    private String reportSource;
+    private String carNumber;
+    private Integer version;
+    private Long activeBinId;
+    private Long binCycle;
 }

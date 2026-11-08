@@ -1,6 +1,51 @@
 server:
   port: ${SMARTWASTE_PORT:8080}
+smartwaste:
+  auth:
+    secret: ${SMARTWASTE_JWT_SECRET:}
+    access-seconds: 900
+    refresh-seconds: 604800
+  amap:
+    web-key: ${SMARTWASTE_AMAP_WEB_KEY:}
+    js-key: ${SMARTWASTE_AMAP_JS_KEY:}
+    security-js-code: ${SMARTWASTE_AMAP_SECURITY_JS_CODE:}
+  orders:
+    dispatch-millis: 2000
+    consume-max-attempts: 5
+  order-reminder:
+    timeout-minutes: ${SMARTWASTE_ORDER_TIMEOUT_MINUTES:10}
+    scan-interval-millis: ${SMARTWASTE_ORDER_SCAN_INTERVAL_MILLIS:60000}
+    initial-delay-millis: ${SMARTWASTE_ORDER_SCAN_INITIAL_DELAY_MILLIS:5000}
 spring:
+  redis:
+    host: ${SMARTWASTE_REDIS_HOST:127.0.0.1}
+    port: ${SMARTWASTE_REDIS_PORT:6379}
+    password: ${SMARTWASTE_REDIS_PASSWORD:}
+    database: ${SMARTWASTE_REDIS_DATABASE:0}
+    ssl: ${SMARTWASTE_REDIS_SSL:false}
+    timeout: 3s
+  rabbitmq:
+    host: ${SMARTWASTE_RABBITMQ_HOST:127.0.0.1}
+    port: ${SMARTWASTE_RABBITMQ_PORT:5672}
+    username: ${SMARTWASTE_RABBITMQ_USERNAME:smartwaste}
+    password: ${SMARTWASTE_RABBITMQ_PASSWORD:}
+    virtual-host: ${SMARTWASTE_RABBITMQ_VHOST:/}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10
+        concurrency: 2
+        max-concurrency: 4
+        default-requeue-rejected: false
+        recovery-interval: 5000
+  flyway:
+    enabled: ${SMARTWASTE_SCHEMA_MIGRATION_ENABLED:true}
+    baseline-on-migrate: true
+    baseline-version: 0
   application:
     # 应用的名称
     name: SmartWaste
@@ -20,7 +65,7 @@ mybatis-plus:
     # address_book ---> AddressBook
     map-underscore-to-camel-case: true
 
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
   global-config:
     db-config:
       id-type: ASSIGN_ID

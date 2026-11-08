@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+  <title>清运订单管理</title>
   <!-- 引入样式 -->
   <link rel="stylesheet" href="../../plugins/element-ui/index.css" />
   <link rel="stylesheet" href="../../styles/common.css" />
@@ -15,6 +15,80 @@
   }
   .tableBar{
     justify-content: flex-start !important;
+    flex-wrap: wrap;
+    gap: 12px 0;
+  }
+  .order-overview {
+    margin-bottom: 24px;
+  }
+  .overview-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .overview-heading h2 {
+    margin: 0;
+    color: #303133;
+    font-size: 18px;
+  }
+  .overview-note {
+    margin: 0 0 14px;
+    color: #909399;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .statistics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .statistics-card {
+    padding: 18px 20px;
+    border: 1px solid #ebeef5;
+    border-top: 3px solid #e6a23c;
+    border-radius: 6px;
+    background: #fff;
+  }
+  .statistics-card.transit { border-top-color: #409eff; }
+  .statistics-card.completed { border-top-color: #67c23a; }
+  .statistics-card.today { border-top-color: #606266; }
+  .statistics-label {
+    color: #606266;
+    font-size: 14px;
+  }
+  .statistics-value {
+    margin-top: 10px;
+    color: #303133;
+    font-size: 30px;
+    font-weight: 600;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+  .statistics-error {
+    margin-bottom: 14px;
+  }
+  .order-reminders {
+    margin: 0 0 24px;
+    padding: 18px;
+    border: 1px solid #f5dab1;
+    border-radius: 6px;
+    background: #fdf6ec;
+  }
+  .reminder-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .reminder-table { margin-top: 14px; }
+  .reminder-pagination { margin-top: 12px; text-align: right; }
+  @media (max-width: 900px) {
+    .statistics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 480px) {
+    .statistics-grid { grid-template-columns: 1fr; }
   }
   .info-box{
     margin: -15px -44px 20px;
@@ -44,10 +118,60 @@
 <body>
   <div class="dashboard-container" id="order-app" v-loading="loading">
     <div class="container">
+      <section class="order-overview" aria-label="订单统计">
+        <div class="overview-heading">
+          <h2>订单概览</h2>
+          <el-button size="small" icon="el-icon-refresh" :loading="statisticsLoading" @click="loadStatistics">刷新统计</el-button>
+        </div>
+        <p class="overview-note">状态数量统计全部订单，不受下方筛选条件影响；今日订单按北京时间下单日期统计，包含已取消订单。<span v-if="statistics">统计日期：{{ statistics.statisticDate }}</span></p>
+        <el-alert v-if="statisticsError" :title="statisticsError" type="error" :closable="false" show-icon class="statistics-error"></el-alert>
+        <div class="statistics-grid" v-loading="statisticsLoading" aria-live="polite" :aria-busy="String(statisticsLoading)">
+          <div class="statistics-card">
+            <div class="statistics-label">待接单</div>
+            <div class="statistics-value">{{ statistics ? statistics.pendingCount : '—' }}</div>
+          </div>
+          <div class="statistics-card transit">
+            <div class="statistics-label">运输中</div>
+            <div class="statistics-value">{{ statistics ? statistics.inTransitCount : '—' }}</div>
+          </div>
+          <div class="statistics-card completed">
+            <div class="statistics-label">已完成</div>
+            <div class="statistics-value">{{ statistics ? statistics.completedCount : '—' }}</div>
+          </div>
+          <div class="statistics-card today">
+            <div class="statistics-label">今日订单</div>
+            <div class="statistics-value">{{ statistics ? statistics.todayCount : '—' }}</div>
+          </div>
+        </div>
+      </section>
+      <section class="order-reminders" aria-label="超时未接订单提醒">
+        <div class="overview-heading">
+          <h2>超时未接订单 <el-tag v-if="reminders" type="danger" size="small">{{ reminders.total }} 笔</el-tag></h2>
+          <div class="reminder-actions">
+            <el-tag :type="reminderConnectionState === 'connected' ? 'success' : 'info'" size="small">{{ reminderConnectionText }}</el-tag>
+            <el-button size="small" icon="el-icon-refresh" :loading="remindersLoading" @click="loadReminders">刷新提醒</el-button>
+          </div>
+        </div>
+        <p class="overview-note">等待满 {{ reminders ? reminders.timeoutMinutes : '—' }} 分钟仍未接单的订单会显示在这里，接单或取消后移出提醒。<span v-if="reminders">更新于 {{ reminders.checkedAt }}</span></p>
+        <el-alert v-if="remindersError" :title="remindersError" type="error" :closable="false" show-icon></el-alert>
+        <div v-if="reminders" v-loading="remindersLoading" aria-live="polite">
+          <el-table :data="reminders.records" class="reminder-table" stripe empty-text="暂无超时未接订单">
+            <el-table-column prop="number" label="订单号" min-width="140"></el-table-column>
+            <el-table-column prop="userName" label="用户" min-width="90"></el-table-column>
+            <el-table-column prop="startAddress" label="起始地址" min-width="160" show-overflow-tooltip></el-table-column>
+            <el-table-column prop="orderTime" label="下单时间" min-width="170"></el-table-column>
+            <el-table-column prop="waitingMinutes" label="已等待（分钟）" min-width="130"></el-table-column>
+            <el-table-column prop="overdueMinutes" label="超时（分钟）" min-width="120"></el-table-column>
+          </el-table>
+          <el-pagination class="reminder-pagination" :current-page="reminderPage" :page-size="5" :total="Number(reminders.total)"
+                         layout="total, prev, pager, next" @current-change="handleReminderPageChange"></el-pagination>
+        </div>
+        <p v-else-if="remindersLoading" class="overview-note">正在加载提醒…</p>
+      </section>
       <!-- 搜索项 -->
       <div class="tableBar">
         <el-input v-model="input" placeholder="请输入订单号" style="width: 250px; margin-right: 40px" clearable>
-          <i slot="prefix" class="el-input__icon el-icon-search" style="cursor: pointer" @click="init"></i>
+          <i slot="prefix" class="el-input__icon el-icon-search" style="cursor: pointer" @click="handleQuery"></i>
         </el-input>
         <template>
           <el-select v-model="input2" clearable placeholder="请选择订单状态">
@@ -76,7 +200,7 @@
           :default-time="['00:00:00', '23:59:59']"
           style="width: 400px;margin-left: 40px;"
         ></el-date-picker>
-        <el-button type="primary" class="search-btn" @click="init">查询</el-button>
+        <el-button type="primary" class="search-btn" @click="handleQuery">查询</el-button>
       </div>
       <el-table :data="tableData" stripe class="tableBox">
         <el-table-column prop="number" label="订单号"></el-table-column>
@@ -100,14 +224,13 @@
             <el-button type="text" @click="goDetail(row)" class="blueBug">
               查看
             </el-button>
-            <el-divider v-if="row.status === 1" direction="vertical"></el-divider>
-            <el-button v-if="row.status === 1" type="text" @click="cancelOrDeliveryOrComplete(2, row.id)" class="blueBug">
-              运输
-            </el-button>
+            <a :href="'/workflow/route.html?id=' + row.id + '&role=admin'" target="_blank" rel="noopener">清运路线</a>
+            <el-tag v-if="row.status === 1" size="small" type="info">待司机接单</el-tag>
             <el-divider v-if="row.status === 2" direction="vertical"></el-divider>
             <el-button v-if="row.status === 2" type="text" @click="cancelOrDeliveryOrComplete(3, row.id)" class="blueBug">
               完成
             </el-button>
+            <el-button v-if="row.status === 1 || row.status === 2" type="text" @click="cancelOrDeliveryOrComplete(4, row.id)">取消</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -169,8 +292,9 @@
     <script src="../../plugins/element-ui/index.js"></script>
     <!-- 引入axios -->
     <script src="../../plugins/axios/axios.min.js"></script>
-    <script src="../../js/request.js"></script>
+    <script src="/workflow/auth.js"></script><script src="../../js/request.js"></script>
     <script src="../../api/order.js"></script>
+    <script src="../../js/order-reminder-socket.js"></script>
     <script>
       new Vue({
         el: '#order-app',
@@ -188,10 +312,20 @@
              dialogVisible: false,
              diaForm: {},
              loading: false,
+             statistics: null,
+             statisticsLoading: false,
+             statisticsError: '',
+             statisticsRequestId: 0,
+             reminders: null,
+             remindersLoading: false,
+             remindersError: '',
+             reminderPage: 1,
+             reminderRequestId: 0,
+             reminderConnectionState: 'connecting',
 
             options: [{
               value: '1',
-              label: '待运输'
+              label: '待接单'
             }, {
               value: '2',
               label: '运输中'
@@ -205,7 +339,15 @@
             value: ''
           }
         },
-        computed: {},
+        computed: {
+          reminderConnectionText () {
+            return {
+              connecting: '正在连接提醒服务', connected: '实时提醒已连接',
+              reconnecting: '提醒连接已断开，正在重连', unauthorized: '登录已失效，请重新登录',
+              unsupported: '当前浏览器不支持实时提醒'
+            }[this.reminderConnectionState] || '提醒服务未连接'
+          }
+        },
         watch:{
           orderTime (val) {
             if (val && val.length >= 2) {
@@ -221,10 +363,25 @@
           this.init()
         },
         mounted() {
-          // this.loading = false
+          this._reminderSocket = createOrderReminderSocket({
+            onState: state => { this.reminderConnectionState = state },
+            onRefresh: () => { this.loadReminders() },
+            onScanError: () => { this.remindersError = '超时订单检查暂时失败，将自动重试；也可点击刷新提醒。' }
+          })
+          this._stopReminderSocket = () => { if (this._reminderSocket) this._reminderSocket.stop() }
+          window.addEventListener('pagehide', this._stopReminderSocket)
+        },
+        beforeDestroy() {
+          ++this.reminderRequestId
+          if (this._stopReminderSocket) {
+            this._stopReminderSocket()
+            window.removeEventListener('pagehide', this._stopReminderSocket)
+          }
         },
         methods: {
           async init () {
+            this.loadStatistics()
+            this.loadReminders()
             getOrderDetailPage({ page: this.page, pageSize: this.pageSize, number: this.input || undefined, status: this.input2 || undefined, beginTime: this.beginTime || undefined, endTime: this.endTime || undefined }).then(res => {
               if (String(res.code) === '1') {
                 this.tableData = res.data.records || []
@@ -234,6 +391,49 @@
               this.$message.error('请求出错了：' + err)
             })
           },
+          async loadReminders () {
+            const requestId = ++this.reminderRequestId
+            this.remindersLoading = true
+            this.remindersError = ''
+            try {
+              const res = await getOverdueOrderReminders({ page: this.reminderPage, pageSize: 5 })
+              if (!res || String(res.code) !== '1' || !res.data) throw new Error('提醒加载失败')
+              if (requestId !== this.reminderRequestId) return
+              const total = Number(res.data.total)
+              if (this.reminderPage > 1 && (this.reminderPage - 1) * 5 >= total) {
+                this.reminderPage = Math.max(1, Math.ceil(total / 5))
+                return this.loadReminders()
+              }
+              this.reminders = res.data
+            } catch (error) {
+              if (requestId === this.reminderRequestId) this.remindersError = '提醒加载失败，当前内容可能不是最新结果，请刷新重试。'
+            } finally {
+              if (requestId === this.reminderRequestId) this.remindersLoading = false
+            }
+          },
+          handleReminderPageChange (page) {
+            this.reminderPage = page
+            this.loadReminders()
+          },
+          async loadStatistics () {
+            const requestId = ++this.statisticsRequestId
+            this.statisticsLoading = true
+            this.statisticsError = ''
+            try {
+              const res = await getOrderStatistics()
+              if (!res || String(res.code) !== '1' || !res.data) {
+                throw new Error((res && res.msg) || '订单统计加载失败')
+              }
+              if (requestId === this.statisticsRequestId) this.statistics = res.data
+            } catch (err) {
+              if (requestId === this.statisticsRequestId) {
+                this.statistics = null
+                this.statisticsError = '订单统计加载失败，请点击“刷新统计”重试。'
+              }
+            } finally {
+              if (requestId === this.statisticsRequestId) this.statisticsLoading = false
+            }
+          },
           handleQuery() {
             this.page = 1;
             this.init();
@@ -242,7 +442,7 @@
             let str = ''
             switch(row.status){
                 case 1:
-                    str =  '待运输'
+                    str =  '待接单'
                 break;
                 case 2:
                     str =  '运输中'
@@ -272,7 +472,7 @@
               }).then(() => {
                 editOrderDetail(params).then(res => {
                   if (res.code === 1) {
-                    this.$message.success(status === 2 ? '订单运输中' : '订单已完成')
+                    this.$message.success(status === 4 ? '订单已取消' : '订单已完成')
                     this.init()
                   } else {
                     this.$message.error(res.msg || '操作失败')

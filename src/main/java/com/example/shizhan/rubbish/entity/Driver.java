@@ -1,5 +1,7 @@
 package com.example.shizhan.rubbish.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.io.Serializable;
 
 public class Driver implements Serializable {
@@ -8,6 +10,7 @@ public class Driver implements Serializable {
     private String phone;
     private String carNumber;
     private String address;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
     private String username;
     private String updateTime;

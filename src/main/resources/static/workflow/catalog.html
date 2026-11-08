@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>桶站管理</title>
+<link rel="stylesheet" href="/backend/plugins/element-ui/index.css"><link rel="stylesheet" href="workflow.css"></head>
+<body><main id="app" class="workspace" v-cloak><section class="panel">
+<div class="toolbar"><h1>桶站管理</h1><div><el-button @click="load">刷新</el-button><el-button type="primary" @click="edit()">创建{{ tab === 'bins' ? '垃圾桶' : '垃圾站' }}</el-button></div></div>
+<el-radio-group v-model="tab"><el-radio-button label="bins">垃圾桶</el-radio-button><el-radio-button label="stations">垃圾站</el-radio-button></el-radio-group>
+<p class="note">先维护垃圾站，再为垃圾桶关联目的垃圾站；经纬度使用高德 GCJ02 坐标。设备绑定后生成上报密钥，请在生成时保存。</p>
+<el-alert v-if="error" :title="error" type="error" :closable="false"></el-alert>
+<el-table :data="tab === 'bins' ? bins : stations" v-loading="busy"><el-table-column v-if="tab === 'bins'" prop="code" label="桶编号" min-width="120"></el-table-column>
+<el-table-column prop="name" label="名称" min-width="130"></el-table-column><el-table-column prop="address" label="地址" min-width="180"></el-table-column>
+<el-table-column v-if="tab === 'bins'" prop="wasteType" label="可投放类型" min-width="120"></el-table-column>
+<el-table-column v-if="tab === 'bins'" label="关联垃圾站" min-width="130"><template slot-scope="s">{{ stationName(s.row.stationId) }}</template></el-table-column>
+<el-table-column label="启用状态" width="100"><template slot-scope="s">{{ s.row.status === 1 ? '启用' : '停用' }}</template></el-table-column>
+<el-table-column v-if="tab === 'bins'" label="桶状态" width="100"><template slot-scope="s">{{ s.row.fillStatus === 1 ? '已满' : '可投放' }}</template></el-table-column>
+<el-table-column v-if="tab === 'bins'" prop="deviceId" label="设备编号" min-width="130"></el-table-column>
+<el-table-column label="操作" min-width="220"><template slot-scope="s"><el-button type="text" @click="edit(s.row)">编辑</el-button>
+<template v-if="tab === 'bins' && s.row.deviceId"><el-button type="text" @click="resetToken(s.row)">重置设备密钥</el-button><el-button type="text" @click="openSimulator(s.row)">模拟上报</el-button></template></template></el-table-column></el-table>
+</section>
+<el-dialog :title="(form.id ? '编辑' : '创建') + (tab === 'bins' ? '垃圾桶' : '垃圾站')" :visible.sync="editing" width="560px">
+<el-form label-position="top"><el-form-item v-if="tab === 'bins'" label="垃圾桶编号"><el-input v-model.trim="form.code" maxlength="64"></el-input></el-form-item>
+<el-form-item label="名称"><el-input v-model.trim="form.name" maxlength="64"></el-input></el-form-item><el-form-item label="地址"><el-input v-model.trim="form.address" maxlength="255"></el-input></el-form-item>
+<div class="coordinate-fields"><el-form-item label="经度"><el-input v-model="form.longitude"></el-input></el-form-item><el-form-item label="纬度"><el-input v-model="form.latitude"></el-input></el-form-item></div>
+<template v-if="tab === 'bins'"><el-form-item label="可投放类型"><el-input v-model.trim="form.wasteType" placeholder="例如：可回收物" maxlength="64"></el-input></el-form-item>
+<el-form-item label="关联垃圾站"><el-select v-model="form.stationId" placeholder="请选择已启用垃圾站"><el-option v-for="s in stations.filter(s => s.status === 1)" :key="s.id" :label="s.name" :value="s.id"></el-option></el-select></el-form-item>
+<el-form-item label="设备编号（可选）"><el-input v-model.trim="form.deviceId" maxlength="64" placeholder="绑定设备后可由设备自动上报"></el-input></el-form-item></template>
+<el-form-item label="启用状态"><el-radio-group v-model="form.status"><el-radio :label="1">启用</el-radio><el-radio :label="0">停用</el-radio></el-radio-group></el-form-item></el-form>
+<span slot="footer"><el-button @click="editing = false">取消</el-button><el-button type="primary" :loading="saving" @click="save">保存</el-button></span></el-dialog>
+<el-dialog title="设备上报密钥" :visible.sync="showToken" width="560px" @closed="token = ''"><p>请保存此密钥。关闭后无法再次查看，需要时可重新生成。</p><p class="device-token">{{ token }}</p></el-dialog>
+<el-dialog title="模拟智能桶满桶上报" :visible.sync="simulating" width="560px" @closed="simulation.token = ''">
+<p class="note">桶编号：{{ simulation.code }}，设备编号：{{ simulation.deviceId }}</p>
+<el-form label-position="top"><el-form-item label="设备上报密钥"><el-input v-model="simulation.token" type="password" show-password autocomplete="off"></el-input></el-form-item></el-form>
+<span slot="footer"><el-button @click="simulating = false">取消</el-button><el-button type="primary" :loading="reporting" @click="simulate">发送满桶上报</el-button></span></el-dialog>
+</main><script src="/backend/plugins/vue/vue.js"></script><script src="/backend/plugins/element-ui/index.js"></script><script src="/workflow/auth.js"></script><script src="api.js"></script><script src="catalog.js"></script></body></html>

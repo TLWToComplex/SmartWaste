@@ -24,6 +24,10 @@
         <el-form-item label="账号:" prop="username">
           <el-input v-model="ruleForm.username" placeholder="请输入账号" maxlength="20"/>
         </el-form-item>
+        <el-form-item :label="actionType === 'add' ? '初始密码:' : '重置密码:'" prop="password">
+          <el-input v-model="ruleForm.password" type="password" show-password autocomplete="new-password"
+            :placeholder="actionType === 'add' ? '请输入至少8位密码' : '留空保留原密码'"/>
+        </el-form-item>
         <el-form-item
           label="员工姓名:"
           prop="name"
@@ -94,7 +98,7 @@
     <script src="../../plugins/element-ui/index.js"></script>
     <!-- 引入axios -->
     <script src="../../plugins/axios/axios.min.js"></script>
-    <script src="../../js/request.js"></script>
+    <script src="/workflow/auth.js"></script><script src="../../js/request.js"></script>
     <script src="../../api/member.js"></script>
     <script src="../../js/validate.js"></script>
     <script src="../../js/index.js"></script>
@@ -126,6 +130,12 @@
               ],
               //姓名
               name: [{ required: true, 'validator': checkName, 'trigger': 'blur' }],
+              password: [{ trigger: 'blur', validator: (rule, value, callback) => {
+                if (!value && this.actionType === 'edit') return callback()
+                if (!value || value.length < 8 || new TextEncoder().encode(value).length > 72)
+                  return callback(new Error('密码至少8位，且不超过72字节'))
+                callback()
+              }}],
               'phone': [{ 'required': true, 'validator': checkPhone, 'trigger': 'blur' }],
               'idNumber': [{ 'required': true, 'validator': validID, 'trigger': 'blur' }]
             }
@@ -146,7 +156,7 @@
               console.log(res)
               if (String(res.code) === '1') {
                 console.log(res.data)
-                this.ruleForm = res.data
+                this.ruleForm = Object.assign({}, res.data, { password: '' })
                 this.ruleForm.sex = res.data.sex === '0' ? '女' : '男'
                 // this.ruleForm.password = ''
               } else {
@@ -160,7 +170,6 @@
 
               if (valid) {
                 if (this.actionType === 'add') {
-                    this.ruleForm.password = 'e10adc3949ba59abbe56e057f20f883e'
                   const params = {
                     ...this.ruleForm,
 
@@ -176,7 +185,7 @@
                           username: '',
                           'name': '',
                           'phone': '',
-                          // 'password': '',
+                          password: '',
                           // 'rePassword': '',/
                           'sex': '男',
                           'idNumber': ''

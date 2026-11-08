@@ -105,7 +105,7 @@
     <script src="plugins/element-ui/index.js"></script>
     <!-- 引入axios -->
     <script src="plugins/axios/axios.min.js"></script>
-    <script src="js/request.js"></script>
+    <script src="/workflow/auth.js"></script><script src="js/request.js"></script>
     <script src="./api/login.js"></script>
     <script>
 
@@ -126,8 +126,8 @@
 
                   {
                     id: '3',
-                    name: '轨迹管理',
-                    url: 'page/login/guiji.html',
+                    name: '车辆监管',
+                    url: '/workflow/monitor.html',
                     icon: 'icon-guiji'
                   },
 
@@ -140,10 +140,16 @@
                 {
                     id: '5',
                     name: '司机管理',
-                    url: 'page/driver/list.html',
+                    url: '/workflow/drivers.html',
                     icon: 'icon-driver',
                 },
 
+                  {
+                    id: '6', name: '桶站管理', url: '/workflow/catalog.html', icon: 'icon-order'
+                  },
+                  {
+                    id: '7', name: '上报处理', url: '/workflow/events.html', icon: 'icon-order'
+                  }
             ],
             //初始界面
             //iframeUrl: 'page/login/guiji.html',
@@ -179,7 +185,7 @@
               if(res.code === 1){
                 localStorage.removeItem('userInfo')
                 //window.location.href = '../../templates/backend/page/login/login.html'
-                window.location.href = 'http://localhost:8080/backend/page/login/login.html'
+                window.location.href = '/backend/page/login/login.html'
               }
             })
           },

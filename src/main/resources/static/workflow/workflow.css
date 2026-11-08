@@ -1,0 +1,16 @@
+body { margin: 0; background: #f4f6f8; color: #303133; font: 14px Arial, 'Microsoft YaHei', sans-serif; }
+[v-cloak] { display: none; }
+.workspace { max-width: 1280px; margin: 24px auto; padding: 0 20px; }
+.panel { background: white; padding: 24px; border-radius: 8px; margin-bottom: 20px; }
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.toolbar h1, .toolbar h2 { margin: 0; font-size: 22px; }
+.note { color: #737b87; line-height: 1.7; margin: 10px 0 16px; }
+.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.login-panel { max-width: 440px; margin: 50px auto; }
+.coordinate-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.el-dialog { max-width: calc(100vw - 32px); }
+.device-token { overflow-wrap: anywhere; white-space: pre-wrap; }
+.pagination { margin-top: 18px; text-align: right; }
+.transport-map { width: 100%; height: 480px; margin-top: 18px; background: #edf1f5; border-radius: 6px; }
+.vehicle-label { padding: 4px 8px; background: white; border: 1px solid #2580e8; border-radius: 4px; white-space: nowrap; }
+@media (max-width: 600px) { .workspace { padding: 0 10px; margin-top: 12px; } .panel { padding: 16px; } .coordinate-fields { grid-template-columns: 1fr; } }

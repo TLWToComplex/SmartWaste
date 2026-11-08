@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>司机清运工作台</title>
+<link rel="stylesheet" href="/backend/plugins/element-ui/index.css"><link rel="stylesheet" href="workflow.css"></head>
+<body><main id="app" class="workspace" v-cloak><section class="panel">
+<div class="toolbar"><h1>司机清运工作台</h1><div class="actions"><span>{{ profile.name }} · {{ profile.carNumber }}</span><el-button size="small" @click="load">刷新</el-button><el-button size="small" @click="logout">退出</el-button></div></div>
+<el-radio-group v-model="scope" @change="load"><el-radio-button label="pending">待接订单</el-radio-button><el-radio-button label="mine">我的订单</el-radio-button></el-radio-group>
+<p class="note">自主选择待接任务；清运完成后确认完成，系统将恢复对应垃圾桶的可投放状态。</p>
+<p v-if="trackingOrderId" class="note">{{ trackingMessage }} <el-button type="text" @click="stopTracking">停止定位上报</el-button></p>
+<el-alert v-if="error" :title="error" type="error" :closable="false"></el-alert>
+<el-table :data="orders" v-loading="busy" empty-text="当前没有订单"><el-table-column prop="number" label="订单号" min-width="200"></el-table-column>
+<el-table-column prop="status_Str" label="状态" width="100"></el-table-column><el-table-column prop="startAddress" label="垃圾桶地址" min-width="170"></el-table-column>
+<el-table-column prop="destination" label="垃圾站地址" min-width="170"></el-table-column><el-table-column prop="userPhone" label="上报用户电话" min-width="130"></el-table-column>
+<el-table-column prop="orderTime" label="下单时间" min-width="170"></el-table-column><el-table-column prop="overTime" label="完成时间" min-width="170"></el-table-column>
+<el-table-column label="操作" width="240"><template slot-scope="s"><a :href="'/workflow/route.html?id=' + s.row.id + '&role=driver'" target="_blank" rel="noopener">清运路线</a> <el-button v-if="s.row.status === 1" size="small" type="primary" :loading="!!acting[s.row.id]" @click="act(s.row, 'accept')">接单</el-button>
+<el-button v-if="s.row.status === 2 && String(s.row.driverId) === String(profile.id) && String(s.row.id) !== trackingOrderId" type="text" :loading="trackingStarting" @click="startTracking(s.row)">开启定位</el-button>
+<el-button v-if="s.row.status === 2 && String(s.row.driverId) === String(profile.id)" size="small" type="success" :loading="!!acting[s.row.id]" @click="act(s.row, 'complete')">确认完成</el-button></template></el-table-column></el-table>
+</section></main><script src="/backend/plugins/vue/vue.js"></script><script src="/backend/plugins/element-ui/index.js"></script><script src="/workflow/auth.js"></script><script src="api.js"></script><script src="map.js"></script><script src="tracking.js"></script><script src="driver.js"></script></body></html>

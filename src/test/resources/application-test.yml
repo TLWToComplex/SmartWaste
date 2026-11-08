@@ -1,0 +1,16 @@
+spring:
+  flyway:
+    enabled: false
+  datasource:
+    druid:
+      driver-class-name: org.h2.Driver
+      url: jdbc:h2:mem:smartwaste_test;MODE=MySQL;DB_CLOSE_DELAY=-1
+      username: sa
+      password: ""
+      validation-query: SELECT 1
+smartwaste:
+  order-reminder:
+    scheduling-enabled: false
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl

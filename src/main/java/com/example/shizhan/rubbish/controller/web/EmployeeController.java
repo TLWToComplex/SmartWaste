@@ -5,6 +5,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.shizhan.rubbish.common.R;
 import com.example.shizhan.rubbish.entity.Employee;
 import com.example.shizhan.rubbish.mapper.EmployeeMapper;
+import com.example.shizhan.rubbish.utils.PasswordUtils;
+import com.example.shizhan.rubbish.common.BusinessChecks;
+import com.example.shizhan.rubbish.common.BusinessException;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.example.shizhan.rubbish.service.Interface.EmployeeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +16,10 @@ import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import com.example.shizhan.rubbish.security.TokenService;
+import com.example.shizhan.rubbish.common.SessionIdentity;
+import java.util.Map;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -36,36 +44,41 @@ public class    EmployeeController {
     private EmployeeService employeeService;
     @Autowired
     private EmployeeMapper employeeMapper;
+    @Autowired private TokenService tokens;
 
 
     @PostMapping("/login")                         //@RequestBody，接受json格式的数据
-    public R<Employee> login(HttpServletRequest request,@RequestBody Employee employee){
-       log.info("************************88");
+    public R<Map<String,Object>> login(HttpServletRequest request,HttpServletResponse response,@RequestBody Employee employee){
         // 1、拿到前端传递过来的数据，拿到密码，对密码进行加密
         String password = employee.getPassword();
-        password = DigestUtils.md5DigestAsHex(password.getBytes());
-
-        List<Employee> list = employeeMapper.selectList(null);
+        if (password == null) throw new BusinessException("请输入密码");
 
 
           // 根据页面提交的用户名查询数据库,queryWrapper里边放置查询条件和查询的id
         LambdaQueryWrapper<Employee> queryWrapper = new LambdaQueryWrapper<>();
         //设置查询条件， 采用Username等值查询
-        queryWrapper.eq(Employee::getUsername,employee.getUsername());
+        queryWrapper.eq(Employee::getUsername, BusinessChecks.text(employee.getUsername(), "账号", 64));
         //根据查询条件进行查询，如果查到了返回对象给one，没查到的话 one=null
         Employee one = employeeService.getOne(queryWrapper);
 
         if(one==null){
             return R.error("登录失败");
         }
-        if(!one.getPassword().equals((password))){
+        String stored = one.getPassword();
+        boolean matches = stored != null && stored.matches("(?i)[0-9a-f]{32}")
+                ? DigestUtils.md5DigestAsHex(password.getBytes(java.nio.charset.StandardCharsets.UTF_8)).equalsIgnoreCase(stored)
+                : PasswordUtils.matches(password, stored);
+        if(!matches){
             return R.error("登录失败");
         }
         if(one.getStatus()==0){
             return R.error("账号禁用");
         }
-        request.getSession().setAttribute("employee",one.getId());
-        return R.success(one);
+        if (!PasswordUtils.isEncoded(one.getPassword())) {
+            employeeMapper.update(null, new LambdaUpdateWrapper<Employee>().eq(Employee::getId, one.getId())
+                    .set(Employee::getPassword, PasswordUtils.encode(password)));
+        }
+        return R.success(tokens.issue("admin",one.getId(),one,request,response));
     }
 
     /**
@@ -75,9 +88,9 @@ public class    EmployeeController {
      */
     @PostMapping("/logout")
     //@GetMapping("/logout")
-    public R<String> logout(HttpServletRequest request){
+    public R<String> logout(HttpServletRequest request,HttpServletResponse response){
         //清理Session中保存的当前登录员工的id
-        request.getSession().removeAttribute("employee");
+        tokens.logout("admin",request,response);
         return R.success("退出成功");
     }
 
@@ -88,12 +101,13 @@ public class    EmployeeController {
      */
     @PostMapping
     public R<String> save(HttpServletRequest request,@RequestBody Employee employee){
+        employee.setId(null);
+        PasswordUtils.validateNewPassword(employee.getPassword());
+        employee.setPassword(PasswordUtils.encode(employee.getPassword()));
         //通过post请求访问这个路径，参数data是一个json形式，需要带上注解
-        log.info("验证有没有密码有没有设置");
-        log.info("新增员工信息："+employee.toString());
         employee.setCreateTime(LocalDateTime.now());
         employee.setUpdateTime(LocalDateTime.now());
-        Long empId = (Long)request.getSession().getAttribute("employee");
+        Long empId = SessionIdentity.requireEmployee(request);
         employee.setCreateUser(empId);
         employee.setStatus(1);
         //employee.setPassword("1234");
@@ -131,10 +145,13 @@ public class    EmployeeController {
      */
     @PutMapping
     public R<String> update(HttpServletRequest request,@RequestBody Employee employee){
-        log.info("employee:{}",employee);
+        if (employee.getPassword() != null && !employee.getPassword().isEmpty()) {
+            PasswordUtils.validateNewPassword(employee.getPassword());
+            employee.setPassword(PasswordUtils.encode(employee.getPassword()));
+        } else employee.setPassword(null);
 
         //获得当前用户的id
-         Long empId = (Long)request.getSession().getAttribute("employee");
+         Long empId = SessionIdentity.requireEmployee(request);
          employee.setUpdateUser(empId);
          employee.setUpdateTime(LocalDateTime.now());
 

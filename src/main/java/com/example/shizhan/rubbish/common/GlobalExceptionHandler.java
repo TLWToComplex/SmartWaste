@@ -16,6 +16,19 @@ import java.sql.SQLIntegrityConstraintViolationException;
 @ResponseBody  //这个注解表示方法返回json数据
 @Slf4j
 public class GlobalExceptionHandler {
+    @ExceptionHandler(com.example.shizhan.rubbish.security.AuthFailure.class)
+    public org.springframework.http.ResponseEntity<R<String>> authError(com.example.shizhan.rubbish.security.AuthFailure ex) {
+        return org.springframework.http.ResponseEntity.status(401).body(R.error(ex.getMessage()));
+    }
+    @ExceptionHandler(BusinessException.class)
+    public R<String> businessError(BusinessException ex) {
+        return R.error(ex.getMessage());
+    }
+
+    @ExceptionHandler(org.springframework.dao.DuplicateKeyException.class)
+    public R<String> duplicateKey(org.springframework.dao.DuplicateKeyException ex) {
+        return R.error("账号、编号或请求已存在，请刷新后重试");
+    }
     /**
      * 异常处理方法,处理SQLIntegrityConstraintViolationException这种类型的异常
      * 存在id重复

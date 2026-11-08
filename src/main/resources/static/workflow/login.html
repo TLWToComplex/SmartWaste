@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>SmartWaste 登录</title>
+<link rel="stylesheet" href="/backend/plugins/element-ui/index.css"><link rel="stylesheet" href="workflow.css"></head>
+<body><main id="app" class="workspace" v-cloak><section class="panel login-panel">
+<h1>{{ role === 'driver' ? '司机端' : '用户端' }}{{ registering ? '注册' : '登录' }}</h1>
+<el-radio-group v-model="role"><el-radio-button label="user">用户端</el-radio-button><el-radio-button label="driver">司机端</el-radio-button></el-radio-group>
+<p class="note">{{ registering ? '设置至少8位密码；司机注册需填写车辆信息。' : '登录后继续垃圾投放或清运任务。' }}</p>
+<el-form label-position="top" @submit.native.prevent="submit">
+<el-form-item label="账号"><el-input v-model.trim="form.username" maxlength="64" autocomplete="username"></el-input></el-form-item>
+<el-form-item label="密码"><el-input v-model="form.password" type="password" show-password autocomplete="current-password"></el-input></el-form-item>
+<template v-if="registering"><el-form-item label="姓名"><el-input v-model.trim="form.name" maxlength="64"></el-input></el-form-item>
+<el-form-item label="电话"><el-input v-model.trim="form.phone" maxlength="32"></el-input></el-form-item>
+<el-form-item v-if="role === 'driver'" label="车牌号"><el-input v-model.trim="form.carNumber" maxlength="32"></el-input></el-form-item></template>
+<el-button type="primary" native-type="submit" :loading="busy">{{ registering ? '注册并登录' : '登录' }}</el-button>
+<el-button type="text" @click="registering = !registering">{{ registering ? '已有账号，去登录' : '注册账号' }}</el-button>
+</el-form></section></main>
+<script src="/backend/plugins/vue/vue.js"></script><script src="/backend/plugins/element-ui/index.js"></script><script src="/workflow/auth.js"></script><script src="api.js"></script><script src="login.js"></script></body></html>

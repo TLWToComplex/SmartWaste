@@ -1,6 +1,7 @@
 package com.example.shizhan.rubbish.service.Interface;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.example.shizhan.rubbish.dto.OrderStatistics;
 import com.example.shizhan.rubbish.entity.orders;
 
 /**
@@ -8,4 +9,5 @@ import com.example.shizhan.rubbish.entity.orders;
  * @version 1.0
  */
 public interface orderService extends IService<orders> {
+    OrderStatistics getStatistics();
 }

@@ -1,42 +1,19 @@
 package com.example.shizhan.rubbish.controller.android;
-
 import com.example.shizhan.rubbish.common.R;
-import com.example.shizhan.rubbish.entity.orders;
-import com.example.shizhan.rubbish.service.Interface.orderService;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.example.shizhan.rubbish.common.SessionIdentity;
+import com.example.shizhan.rubbish.dto.FullBinReportReceipt;
+import com.example.shizhan.rubbish.dto.FullBinReportRequest;
+import com.example.shizhan.rubbish.service.WasteOrderWorkflowService;
+import org.springframework.web.bind.annotation.*;
+import javax.servlet.http.HttpServletRequest;
 
-import java.math.BigInteger;
-import java.time.LocalDateTime;
-
-
-/**
- * 安卓用户端，下单
- */
-@Slf4j
 @RestController
 @RequestMapping("/submitOrder")
 public class SubmitOrderController {
-    @Autowired
-    private orderService os;
+    private final WasteOrderWorkflowService workflow;
+    public SubmitOrderController(WasteOrderWorkflowService workflow) { this.workflow = workflow; }
     @PostMapping
-    public R<String> submitOrder(@RequestBody orders order){
-
-        order.setId(BigInteger.valueOf((long) (Math.random()*100)));
-        order.setNumber(String.valueOf(((long) (Math.random()*100))));
-        order.setStatus(1);
-        order.setUserId(BigInteger.valueOf((long) (Math.random()*100)));
-//        order.setUserName("yyyyyyyyy");kkkk
-//        order.setDriverPhone("123");
-        order.setUserPhone("123423");
-//        order.setStartAddress("中国");
-        order.setOrderTime(LocalDateTime.now().toString());
-        order.setOverTime(LocalDateTime.now().toString());
-        os.save(order);
-        return null;
+    public R<FullBinReportReceipt> submitOrder(@RequestBody FullBinReportRequest body, HttpServletRequest request) {
+        return R.success(workflow.reportByUser(body.getBinId(), body.getRequestId(), SessionIdentity.requireUser(request)));
     }
 }

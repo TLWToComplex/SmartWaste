@@ -7,8 +7,5 @@ function loginApi(data) {
 }
 
 function logoutApi(){
-  return $axios({
-    'url': '/employee/logout',
-    'method': 'post',
-  })
+  return SmartWasteAuth.logout('admin').then(() => ({ code: 1 }))
 }

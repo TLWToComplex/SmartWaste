@@ -7,6 +7,7 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 
 import java.util.List;
 
@@ -14,6 +15,12 @@ import java.util.List;
 @Configuration
 //@ComponentScan("com.example.shizhan.rubbish")
 public class WebMvcConfig extends WebMvcConfigurationSupport {
+    private final com.example.shizhan.rubbish.security.AccessTokenInterceptor access;
+    public WebMvcConfig(com.example.shizhan.rubbish.security.AccessTokenInterceptor access) { this.access=access; }
+    @Override
+    protected void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(access);
+    }
     @Override
     protected void addResourceHandlers(ResourceHandlerRegistry registry) {
         log.info("开始进行静态资源映射");

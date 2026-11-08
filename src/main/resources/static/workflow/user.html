@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>垃圾投放与清运</title>
+<link rel="stylesheet" href="/backend/plugins/element-ui/index.css"><link rel="stylesheet" href="workflow.css"></head>
+<body><main id="app" class="workspace" v-cloak>
+<section class="panel"><div class="toolbar"><h1>垃圾投放与清运</h1><div class="actions"><span>{{ profile.name }}</span><el-button size="small" @click="load">刷新</el-button><el-button size="small" @click="logout">退出</el-button></div></div>
+<p class="note">查看投放点支持的垃圾类型。点击“上报满桶”后，系统受理上报并异步生成或关联清运订单。<a href="/android/user/sort/sort.html">垃圾分类查询与拍照识别</a></p>
+<el-alert v-if="error" :title="error" type="error" :closable="false"></el-alert>
+<el-table :data="bins" v-loading="busy" empty-text="暂无可用投放点，请联系管理员维护桶站资料">
+<el-table-column prop="code" label="垃圾桶编号" min-width="130"></el-table-column><el-table-column prop="name" label="投放点" min-width="120"></el-table-column>
+<el-table-column prop="address" label="地址" min-width="180"></el-table-column><el-table-column prop="wasteType" label="可投放类型" min-width="130"></el-table-column>
+<el-table-column label="状态" width="100"><template slot-scope="s"><el-tag :type="s.row.fillStatus === 1 ? 'warning' : 'success'">{{ s.row.fillStatus === 1 ? '已满' : '可投放' }}</el-tag></template></el-table-column>
+<el-table-column label="操作" width="130"><template slot-scope="s"><el-button size="small" type="primary" :loading="!!submitting[s.row.id]" @click="reportFull(s.row)">上报满桶</el-button></template></el-table-column>
+</el-table></section>
+<section class="panel" v-if="reports.length"><h2>最近上报进度</h2><el-table :data="reports">
+<el-table-column prop="eventId" label="上报编号" min-width="190"></el-table-column><el-table-column prop="message" label="处理进度" min-width="220"></el-table-column>
+<el-table-column prop="orderNumber" label="关联清运单号" min-width="210"></el-table-column></el-table></section>
+<section class="panel"><div class="toolbar"><h2>我的清运订单</h2></div>
+<el-table :data="orders" empty-text="暂无上报记录"><el-table-column prop="number" label="订单号" min-width="200"></el-table-column>
+<el-table-column prop="status_Str" label="状态" width="100"></el-table-column><el-table-column prop="startAddress" label="投放点地址" min-width="160"></el-table-column>
+<el-table-column prop="destination" label="垃圾站地址" min-width="160"></el-table-column><el-table-column prop="orderTime" label="上报时间" min-width="170"></el-table-column>
+<el-table-column prop="driverPhone" label="清运司机电话" min-width="130"></el-table-column><el-table-column label="操作" width="110"><template slot-scope="s">
+<el-button v-if="s.row.status === 1 && String(s.row.userId) === String(profile.id)" type="text" @click="cancel(s.row)">取消订单</el-button></template></el-table-column></el-table>
+</section></main><script src="/backend/plugins/vue/vue.js"></script><script src="/backend/plugins/element-ui/index.js"></script><script src="/workflow/auth.js"></script><script src="api.js"></script><script src="user.js"></script></body></html>

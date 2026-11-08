@@ -3,6 +3,11 @@ package com.example.shizhan.rubbish.controller.web;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.shizhan.rubbish.common.R;
+import com.example.shizhan.rubbish.dto.OrderStatistics;
+import com.example.shizhan.rubbish.dto.OrderReminderPage;
+import com.example.shizhan.rubbish.service.OrderReminderService;
+import com.example.shizhan.rubbish.service.WasteOrderWorkflowService;
+import com.example.shizhan.rubbish.common.BusinessException;
 import com.example.shizhan.rubbish.entity.orders;
 import org.apache.commons.lang.StringUtils;
 import com.example.shizhan.rubbish.service.Interface.orderService;
@@ -12,6 +17,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigInteger;
 import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
+import org.springframework.http.ResponseEntity;
 
 
 /**
@@ -24,6 +31,28 @@ public class OrderController {
 
     @Autowired
     private orderService os;
+    @Autowired
+    private OrderReminderService reminderService;
+    @Autowired
+    private WasteOrderWorkflowService workflow;
+
+    @GetMapping("/overdue-reminders")
+    public ResponseEntity<R<OrderReminderPage>> getOverdueReminders(
+            HttpServletRequest request, @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "5") int pageSize) {
+        if (!com.example.shizhan.rubbish.common.SessionIdentity.isAdmin(request)) {
+            return ResponseEntity.status(401).body(R.<OrderReminderPage>error("请先登录管理端"));
+        }
+        if (page < 1 || pageSize < 1 || pageSize > 100) {
+            return ResponseEntity.badRequest().body(R.<OrderReminderPage>error("分页参数无效，每页数量应为 1 至 100"));
+        }
+        return ResponseEntity.ok(R.success(reminderService.getReminders(page, pageSize)));
+    }
+
+    @GetMapping("/statistics")
+    public R<OrderStatistics> getStatistics() {
+        return R.success(os.getStatistics());
+    }
 
     @GetMapping("/page")
     public R<Page> getAll(
@@ -66,12 +95,11 @@ public class OrderController {
         if(beginTime != null) {
             queryWrapper.ge(orders::getOrderTime, beginTime);
         }
-        if(endTime != null) {
-            queryWrapper.le(orders::getOverTime, endTime);
+        if(endTime != null && !endTime.isEmpty()) {
+            queryWrapper.le(orders::getOrderTime, endTime);
         }
 
-        //添加排序条件
-        // queryWrapper.orderByDesc(Employee::getUpdateTime);
+        queryWrapper.orderByDesc(orders::getOrderTime).orderByDesc(orders::getId);
 
         // 执行查询
         os.page(pageInfo, queryWrapper);
@@ -85,13 +113,16 @@ public class OrderController {
     @PutMapping
     public R<String> changeOrderState(@RequestBody Map<String, Object> json) {
 
-        // 得到数据
-        orders o = new orders();
-        o.setStatus((Integer) json.get("status"));
-        String id = json.get("id").toString();
-        o.setId(BigInteger.valueOf(Integer.parseInt(id)));
-        // 调用service修改数据
-        os.updateById(o);
+        if (json.get("id") == null || json.get("status") == null) throw new BusinessException("请选择订单和操作");
+        BigInteger id;
+        int status;
+        try {
+            id = new BigInteger(json.get("id").toString());
+            status = Integer.parseInt(json.get("status").toString());
+        } catch (NumberFormatException ex) { throw new BusinessException("订单编号或状态无效"); }
+        if (status == 3) workflow.complete(id, null, true);
+        else if (status == 4) workflow.cancel(id, null, true);
+        else throw new BusinessException("请由司机自主接单，管理端可确认完成或取消订单");
         // 返回对应的响应
         return R.success("");
     }

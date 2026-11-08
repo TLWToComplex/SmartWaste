@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>车辆清运监管</title>
+<link rel="stylesheet" href="/backend/plugins/element-ui/index.css"><link rel="stylesheet" href="workflow.css"></head>
+<body><main id="app" class="workspace" v-cloak><section class="panel">
+<div class="toolbar"><h1>车辆清运监管</h1><div class="actions"><span>{{ connectionLabel }}</span><el-button @click="load">刷新位置</el-button></div></div>
+<p class="note">司机开启定位上报后显示车辆位置。超过60秒未更新的位置标记为“未更新”，不视为实时位置。</p>
+<el-alert v-if="error" :title="error" type="error" :closable="false"></el-alert><el-alert v-if="mapError" :title="mapError" type="warning" :closable="false"></el-alert>
+<el-table :data="vehicles" empty-text="暂无车辆定位，请由运输中的司机开启定位上报">
+<el-table-column prop="carNumber" label="车牌" min-width="110"></el-table-column><el-table-column prop="driverName" label="司机" min-width="100"></el-table-column>
+<el-table-column prop="orderNumber" label="清运订单" min-width="190"></el-table-column><el-table-column label="任务状态" width="100"><template slot-scope="s">{{ s.row.orderStatus === 2 ? '运输中' : '已结束' }}</template></el-table-column>
+<el-table-column label="定位状态" width="110"><template slot-scope="s"><el-tag :type="fresh(s.row) ? 'success' : 'info'">{{ fresh(s.row) ? '已更新' : '未更新' }}</el-tag></template></el-table-column>
+<el-table-column prop="updatedAt" label="位置更新时间" min-width="170"></el-table-column>
+<el-table-column label="操作" width="130"><template slot-scope="s"><el-button type="text" @click="select(s.row)">查看位置与路线</el-button></template></el-table-column></el-table>
+<p v-if="selected" class="note">当前车辆：{{ selected.carNumber }}　{{ routeInfo }}</p><div id="vehicle-map" class="transport-map"></div>
+</section></main><script src="/backend/plugins/vue/vue.js"></script><script src="/backend/plugins/element-ui/index.js"></script>
+<script src="auth.js"></script><script src="api.js"></script><script src="map.js"></script><script src="monitor.js"></script></body></html>
