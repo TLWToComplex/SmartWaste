@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="/backend/plugins/element-ui/index.css"><link rel="stylesheet" href="workflow.css"></head>
 <body><main id="app" class="workspace" v-cloak>
 <section class="panel"><div class="toolbar"><h1>垃圾投放与清运</h1><div class="actions"><span>{{ profile.name }}</span><el-button size="small" @click="load">刷新</el-button><el-button size="small" @click="logout">退出</el-button></div></div>
-<p class="note">查看投放点支持的垃圾类型。点击“上报满桶”后，系统受理上报并异步生成或关联清运订单。<a href="/android/user/sort/sort.html">垃圾分类查询与拍照识别</a></p>
+<p class="note">查看投放点支持的垃圾类型。点击“上报满桶”后，系统受理上报并异步生成或关联清运订单。<a href="/android/user/sort/sort.html">垃圾分类查询与拍照识别</a> · <a href="/workflow/chat.html">智能客服</a></p>
 <el-alert v-if="error" :title="error" type="error" :closable="false"></el-alert>
 <el-table :data="bins" v-loading="busy" empty-text="暂无可用投放点，请联系管理员维护桶站资料">
 <el-table-column prop="code" label="垃圾桶编号" min-width="130"></el-table-column><el-table-column prop="name" label="投放点" min-width="120"></el-table-column>

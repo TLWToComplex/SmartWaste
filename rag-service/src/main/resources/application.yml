@@ -1,0 +1,52 @@
+server:
+  address: ${SMARTWASTE_RAG_BIND:127.0.0.1}
+  port: ${SMARTWASTE_RAG_PORT:8081}
+  tomcat:
+    max-http-form-post-size: 512KB
+spring:
+  application:
+    name: smartwaste-rag
+  ai:
+    openai:
+      base-url: ${SMARTWASTE_AI_BASE_URL:https://api.openai.com}
+      api-key: ${SMARTWASTE_AI_API_KEY:not-configured}
+      chat:
+        options:
+          model: ${SMARTWASTE_CHAT_MODEL:gpt-4o-mini}
+          temperature: 0.1
+          max-tokens: 1200
+      embedding:
+        base-url: ${SMARTWASTE_EMBEDDING_BASE_URL:${SMARTWASTE_AI_BASE_URL:https://api.openai.com}}
+        api-key: ${SMARTWASTE_EMBEDDING_API_KEY:${SMARTWASTE_AI_API_KEY:not-configured}}
+        options:
+          model: ${SMARTWASTE_EMBEDDING_MODEL:text-embedding-3-small}
+    retry:
+      max-attempts: 2
+rag:
+  query:
+    enabled: ${SMARTWASTE_QUERY_ENABLED:true}
+    model: ${SMARTWASTE_QUERY_MODEL:gpt-4o-mini}
+    base-url: ${SMARTWASTE_QUERY_BASE_URL:${SMARTWASTE_AI_BASE_URL:https://api.openai.com}}
+    api-key: ${SMARTWASTE_QUERY_API_KEY:${SMARTWASTE_AI_API_KEY:not-configured}}
+    max-queries: ${SMARTWASTE_QUERY_MAX_QUERIES:5}
+    timeout-millis: ${SMARTWASTE_QUERY_TIMEOUT_MILLIS:15000}
+    max-tokens: ${SMARTWASTE_QUERY_MAX_TOKENS:700}
+  retrieval:
+    per-query-top-k: ${SMARTWASTE_RETRIEVAL_TOP_K:10}
+    candidate-limit: ${SMARTWASTE_RETRIEVAL_CANDIDATES:40}
+    evidence-limit: ${SMARTWASTE_RETRIEVAL_EVIDENCE:6}
+  internal-token: ${SMARTWASTE_RAG_INTERNAL_TOKEN:}
+  data-dir: ${SMARTWASTE_RAG_DATA_DIR:./data/knowledge}
+  es-url: ${SMARTWASTE_ES_URL:http://127.0.0.1:9200}
+  es-api-key: ${SMARTWASTE_ES_API_KEY:}
+  es-index: ${SMARTWASTE_ES_INDEX:smartwaste-knowledge-v1}
+  chroma-url: ${SMARTWASTE_CHROMA_URL:http://127.0.0.1:8000}
+  chroma-token: ${SMARTWASTE_CHROMA_TOKEN:}
+  chroma-tenant: ${SMARTWASTE_CHROMA_TENANT:default_tenant}
+  chroma-database: ${SMARTWASTE_CHROMA_DATABASE:default_database}
+  chroma-collection: ${SMARTWASTE_CHROMA_COLLECTION:smartwaste-knowledge-v1}
+  rerank-url: ${SMARTWASTE_RERANK_URL:}
+  rerank-key: ${SMARTWASTE_RERANK_API_KEY:}
+  rerank-model: ${SMARTWASTE_RERANK_MODEL:jina-reranker-v2-base-multilingual}
+  rerank-min-score: ${SMARTWASTE_RERANK_MIN_SCORE:0.25}
+  vector-max-distance: ${SMARTWASTE_VECTOR_MAX_DISTANCE:0.45}

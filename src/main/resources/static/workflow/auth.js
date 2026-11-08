@@ -2,7 +2,7 @@
   const pending = {}
   function role() {
     const path = win.location.pathname
-    if (path.startsWith('/backend/') || /\/workflow\/(catalog|drivers|events|monitor)\.html/.test(path)) return 'admin'
+    if (path.startsWith('/backend/') || /\/workflow\/(catalog|drivers|events|monitor|knowledge)\.html/.test(path)) return 'admin'
     if (path.endsWith('/route.html')) return new URLSearchParams(win.location.search).get('role') === 'admin' ? 'admin' : 'driver'
     if (path.includes('/driver') || new URLSearchParams(win.location.search).get('role') === 'driver') return 'driver'
     return 'user'

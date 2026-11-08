@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -36,7 +36,6 @@
     <!--element-ui的样式-->
     <link rel="stylesheet" href="../../../backend/plugins/element-ui/index.css" />
 
-</head>
 </head>
 <body>
 
@@ -105,31 +104,35 @@
                     :on-success="classifySuccess"
                     :on-error="classifyFail"
                     :before-upload="beforeUpload"
-                    :accept="'image/*'"
+                    accept="image/jpeg,image/png,image/webp"
+                    :disabled="identifying"
                     :show-file-list="false"
                     name="file"
                     >
-                <el-button type="primary" size="medium"  icon="el-icon-camera-solid" style="width: 200px;height: 1.1rem" @click="classify" >拍照识别</el-button>
+                <el-button type="primary" size="medium" icon="el-icon-camera-solid" :loading="identifying" :disabled="identifying" style="width: 200px;height: 1.1rem">{{ identifying ? '正在识别' : '拍照识别' }}</el-button>
             </el-upload>
         </div>
 
         <!--识别结果对话框-->
-        <el-dialog title="识别结果" class="classifyDialog" width="280px" :visible.sync="classifyDialogVisible">
+        <el-dialog :title="classifyForm.uncertain ? '识别结果待确认' : '识别结果'" class="classifyDialog" width="300px" :visible.sync="classifyDialogVisible" @closed="clearPreview">
             <el-form  :model="classifyForm">
                 <el-form-item >
-                    <el-image fit="scale-down"  :src="classifyForm.imageUrl">
+                    <el-image fit="contain" style="width: 100%;height: 160px" :src="classifyForm.imageUrl">
                     </el-image>
                 </el-form-item>
-                <el-form-item label="物品名" label-width=60px>
-                    <el-input v-model="classifyForm.name" autocomplete="off"></el-input>
+                <el-form-item label="识别标签" label-width="70px">
+                    <el-input :value="classifyForm.name" readonly></el-input>
                 </el-form-item>
-                <el-form-item label="分类" label-width=60px>
-                    <el-input v-model="classifyForm.sort" autocomplete="off"></el-input>
+                <el-form-item label="参考分类" label-width="70px">
+                    <el-input :value="classifyForm.sort" readonly></el-input>
                 </el-form-item>
-                <el-form-item label="置信率" label-width=60px>
-                    <el-input v-model="classifyForm.rate" autocomplete="off"></el-input>
+                <el-form-item label="置信度" label-width="70px">
+                    <el-input :value="classifyForm.rate" readonly></el-input>
                 </el-form-item>
             </el-form>
+            <el-alert :title="classifyForm.message" :type="classifyForm.uncertain ? 'warning' : 'info'" :closable="false" show-icon></el-alert>
+            <div v-if="classifyForm.uncertain && classifyForm.candidates.length" class="prediction-candidates"><p>候选结果供核对：</p><p v-for="(candidate, index) in classifyForm.candidates" :key="index">{{ candidate.name }} · {{ candidate.sort }} · {{ percent(candidate.confidence) }}</p></div>
+            <p class="prediction-note">置信度是模型对本次预测的评分。建议每次拍摄一件垃圾，保持光线充足、主体清晰。</p>
             <div   class="dialog-footer">
                 <el-button type="primary" @click="classifyDialogVisible = false">确 定</el-button>
             </div>
@@ -153,83 +156,7 @@
     <script src="/workflow/auth.js"></script>
     <script src="/workflow/api.js"></script>
 
-    <script>
-        new Vue({
-            el:'#sort',
-            data:{
-                formInline:{
-                    name:'',
-                    sortId:''
-                },
-                classifyForm:{
-                    imageUrl:'',
-                    name:'',
-                    sort:'',
-                    rate:''
-                },
-
-                tableData:[],
-                currentPage:1,
-                totalCount:1000,
-                classifyDialogVisible:false,
-            },
-            mounted(){
-                this.selectByPage();
-            },
-            methods:{
-                async selectByPage(){
-                    try {
-                        const query = new URLSearchParams({page: this.currentPage, sortId: this.formInline.sortId, name: this.formInline.name})
-                        const page = await WasteWorkflow.request('/classification?' + query)
-                        this.tableData = page.records || []; this.totalCount = page.total
-                    } catch (error) { this.$message.error(error.message) }
-                },
-                async uploadPhoto(options) {
-                    const form = new FormData(); form.append('file', options.file)
-                    try {
-                        const response = await SmartWasteAuth.fetch('/classification', {method: 'POST', body: form}, 'user')
-                        const result = await response.json()
-                        if (!response.ok || String(result.code) !== '1') throw new Error(result.msg || '识别失败')
-                        options.onSuccess(result)
-                    } catch (error) { options.onError(error) }
-                },
-                classify(){
-                    // this.$refs.upload().submit();
-                    //
-                    // this.classifyDialogVisible = true;
-                },
-
-                classifySuccess(res, file){
-                    this.classifyForm=res.data;
-
-                    this.classifyForm.imageUrl=URL.createObjectURL(file.raw);
-                    console.log(this.classifyForm);
-                    this.classifyDialogVisible=true;
-                },
-                classifyFail(){
-                    this.$message({
-                        type: 'error',
-                        message: '抱歉，识别次数已超限，识别失败╮(╯▽╰)╭',
-                    })
-                },
-                beforeUpload(){
-                    this.$message({
-                        message: '图片识别中，请稍等╰(￣ω￣ｏ)',
-                        type: 'success'
-                    })
-                },
-                query(){
-                    this.currentPage=1;
-                    this.selectByPage();
-                },
-                handleCurrentChange(val) {
-                    this.currentPage=val;
-                    this.selectByPage();
-                    console.log(`当前页: ${val}`);
-                }
-            }
-        })
-    </script>
+    <script src="sort.js"></script>
 
 </body>
 </html>

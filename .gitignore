@@ -38,6 +38,14 @@ node_modules/
 *.log
 logs/
 uploads/
+rag-service/data/
+.build-cache/
+rag-service/.build-cache/
+vision-service/.venv/
+vision-service/data/
+vision-service/checkpoints/
+vision-service/**/__pycache__/
+vision-service/__pycache__/
 application-local.yml
 .DS_Store
 Thumbs.db

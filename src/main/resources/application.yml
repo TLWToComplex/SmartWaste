@@ -1,6 +1,14 @@
 server:
   port: ${SMARTWASTE_PORT:8080}
 smartwaste:
+  vision:
+    url: ${SMARTWASTE_VISION_URL:http://127.0.0.1:8082}
+    internal-token: ${SMARTWASTE_VISION_INTERNAL_TOKEN:}
+    max-bytes: ${SMARTWASTE_VISION_MAX_BYTES:5242880}
+    read-timeout-millis: ${SMARTWASTE_VISION_READ_TIMEOUT_MILLIS:20000}
+  rag:
+    url: ${SMARTWASTE_RAG_URL:http://127.0.0.1:8081}
+    internal-token: ${SMARTWASTE_RAG_INTERNAL_TOKEN:}
   auth:
     secret: ${SMARTWASTE_JWT_SECRET:}
     access-seconds: 900

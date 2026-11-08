@@ -1,0 +1,6 @@
+{
+  "recyclable": {"name": "可回收垃圾", "category": "recyclable"},
+  "hazardous": {"name": "有害垃圾", "category": "hazardous"},
+  "kitchen": {"name": "湿垃圾", "category": "kitchen"},
+  "other": {"name": "干垃圾", "category": "other"}
+}

@@ -21,8 +21,16 @@
 }
 .classifyDialog{
   margin: 0 auto !important;
-  height: 85%;
-  overflow: hidden;
+}
+.classifyDialog .el-dialog__body {
+  max-height: 65vh;
+  overflow-y: auto;
+}
+.prediction-note, .prediction-candidates {
+  font-size: 12px;
+  line-height: 1.7;
+  margin-top: 12px;
+  color: #606266;
 }
 
 .el-message{

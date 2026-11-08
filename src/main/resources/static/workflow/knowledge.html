@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>客服知识库管理</title>
+<link rel="stylesheet" href="/backend/plugins/element-ui/index.css"><link rel="stylesheet" href="workflow.css"><link rel="stylesheet" href="rag.css"></head>
+<body><main id="app" class="workspace" v-cloak><section class="panel">
+<div class="toolbar"><h1>客服知识库</h1><div class="actions"><el-button size="small" :disabled="busy" @click="load">刷新</el-button><el-button size="small" :loading="busy" @click="seed">导入内置示例</el-button><el-button type="primary" size="small" :disabled="busy" @click="create">新增知识</el-button></div></div>
+<p class="note">维护垃圾分类、投放规则、设备说明和平台流程。请注明资料来源及适用地区、型号。保存后自动分块并更新检索索引；内置示例需核对后用于实际服务。</p>
+<div class="knowledge-stats" v-if="status"><el-tag>{{ status.documents }} 篇文档 / {{ status.chunks }} 个分块</el-tag><el-tag :type="status.dependencies.elasticsearch ? 'success' : 'danger'">关键词索引 {{ status.dependencies.elasticsearch ? '可用' : '未连接' }}</el-tag><el-tag :type="status.dependencies.chroma ? 'success' : 'danger'">向量库 {{ status.dependencies.chroma ? '可用' : '未连接' }}</el-tag><el-tag :type="status.rerankConfigured ? 'success' : 'warning'">{{ status.rerankConfigured ? '已配置精排' : '未配置精排' }}</el-tag><el-tag v-if="status.queryOptimization" :type="status.queryOptimization.configured ? 'success' : 'warning'">{{ !status.queryOptimization.enabled ? '查询优化已关闭' : status.queryOptimization.configured ? '已配置查询优化' : '查询优化待配置' }}</el-tag></div>
+<el-alert v-if="error" :title="error" type="error" :closable="false"></el-alert>
+<el-table :data="documents" v-loading="busy" empty-text="暂无知识，请新增文档或导入示例"><el-table-column prop="title" label="标题" min-width="180"></el-table-column>
+<el-table-column label="类别" width="110"><template slot-scope="s">{{ categoryLabel(s.row.category) }}</template></el-table-column><el-table-column prop="source" label="资料来源" min-width="180"></el-table-column>
+<el-table-column prop="chunks" label="分块" width="70"></el-table-column><el-table-column prop="updatedAt" label="更新时间" min-width="200"></el-table-column>
+<el-table-column label="操作" width="210"><template slot-scope="s"><el-button type="text" :disabled="busy" @click="edit(s.row)">编辑</el-button><el-button type="text" :disabled="busy" @click="reindex(s.row)">重建索引</el-button><el-button type="text" :disabled="busy" @click="remove(s.row)">删除</el-button></template></el-table-column></el-table>
+</section>
+<el-dialog :title="form.id ? '编辑知识' : '新增知识'" :visible.sync="visible" width="850px" :close-on-click-modal="false" :close-on-press-escape="!saving" :show-close="!saving" :before-close="closeEditor">
+<el-form label-position="top" :model="form" :disabled="saving"><el-form-item label="标题"><el-input v-model="form.title" maxlength="120"></el-input></el-form-item>
+<div class="coordinate-fields"><el-form-item label="类别"><el-select v-model="form.category"><el-option v-for="c in categories" :key="c.value" :value="c.value" :label="c.label"></el-option></el-select></el-form-item>
+<el-form-item label="资料来源 / 适用地区或型号"><el-input v-model="form.source" maxlength="300"></el-input></el-form-item></div>
+<el-form-item label="知识正文（支持 Markdown 标题，最多 10 万字）"><input type="file" accept=".md,.txt,text/plain,text/markdown" :disabled="saving" @change="importFile"><el-input class="knowledge-content" type="textarea" :rows="13" v-model="form.content" maxlength="100000" show-word-limit></el-input></el-form-item></el-form>
+<span slot="footer"><el-button :disabled="saving" @click="visible = false">取消</el-button><el-button type="primary" :loading="saving" @click="save">保存并建立索引</el-button></span></el-dialog>
+</main><script src="/backend/plugins/vue/vue.js"></script><script src="/backend/plugins/element-ui/index.js"></script><script src="auth.js"></script><script src="api.js"></script><script src="knowledge.js"></script></body></html>

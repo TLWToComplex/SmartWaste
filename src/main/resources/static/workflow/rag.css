@@ -1,0 +1,14 @@
+.chat-workspace { max-width: 950px; }
+.chat-message { margin: 18px 0; padding: 18px; border-radius: 8px; background: #f4f7fa; }
+.chat-message.user { margin-left: 12%; background: #eaf2ff; }
+.chat-label { font-weight: 600; margin-bottom: 10px; }
+.chat-label .note { font-size: 12px; font-weight: normal; }
+.answer-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; }
+.rag-warning { color: #966315; font-size: 13px; line-height: 1.6; }
+.evidence { margin-top: 14px; }
+.evidence summary { cursor: pointer; color: #2469b4; }
+.source-card { padding: 14px 0; border-bottom: 1px solid #e5e9ef; }
+.chat-submit { margin: 14px 0 0; }
+.chat-workspace .el-textarea { margin-top: 12px; }
+.knowledge-stats { margin-bottom: 18px; display: flex; gap: 12px; flex-wrap: wrap; }
+.knowledge-content textarea { font-family: Consolas, 'Microsoft YaHei', monospace; line-height: 1.7; }
